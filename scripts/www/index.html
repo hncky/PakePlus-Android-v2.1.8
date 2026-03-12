@@ -186,9 +186,9 @@
       <span class="slider"></span>
     </label><br>
     <button id="onButton">开启</button>
-    <br><br>
+    <br>
     <button id="offButton">关闭</button>
-    <br><br>
+    <br>
     <input id="device" placeholder="设备地址"><br>
     <button id="setDevice">设置</button><br>
     <input type="number" id="inputValue" placeholder="开启时间"><br>
@@ -371,8 +371,11 @@
         const value = document.getElementById('device').value;
 
         if (device != value) {
-          localStorage.setItem("device", value);
+          device = value;
+          localStorage.setItem("device", device);
         }
+        document.getElementById('device').value = '';
+        document.getElementById('device').placeholder = device;
       }
     }
 
