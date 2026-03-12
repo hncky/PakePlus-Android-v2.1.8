@@ -146,8 +146,12 @@
       button,
       input {
         font-size: 20px;
-        padding: 16px 28px;
-        margin: 14px;
+
+        @media (max-height >=640) {
+          padding: 16px 28px;
+          margin: 14px;
+        }
+
         touch-action: none;
       }
 
@@ -186,7 +190,7 @@
       <span class="slider"></span>
     </label><br>
     <button id="onButton">开启</button>
-    <br><br>
+    <br>
     <button id="offButton">关闭</button>
     <br>
     <input id="device" placeholder="设备地址"><br>
@@ -365,7 +369,7 @@
       }
       showOntime(ontime);
     }
-    
+
     function setDevice() {
       if (document.getElementById('device').value) {
         const value = document.getElementById('device').value;
