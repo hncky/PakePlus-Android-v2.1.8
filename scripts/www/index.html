@@ -30,7 +30,8 @@
     }
 
     button,
-    input {
+    input,
+    select {
       margin: 10px;
       padding: 10px 20px;
       font-size: 16px;
@@ -41,6 +42,19 @@
       -webkit-user-select: none;
       -webkit-touch-callout: none;
       user-select: none;
+    }
+
+    #inputOntime {
+      max-width: 16ch;
+    }
+
+    select {
+      min-width: 21ch;
+      text-align-last: center;
+      text-align: center;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
     }
 
     input::placeholder {
@@ -134,7 +148,7 @@
       transform: translateX(26px);
     }
 
-    .switch-label {
+    .switchLabelClass {
       display: block;
       margin-bottom: 5px;
       font-weight: bold;
@@ -144,12 +158,13 @@
     @media (max-width: 768px) and (hover: none) {
 
       button,
-      input {
-        font-size: 20px;
+      input,
+      select {
 
-        @media (max-height >=640) {
+        @media (min-height: 641px) {
           padding: 16px 28px;
           margin: 14px;
+          font-size: 20px;
         }
 
         touch-action: none;
@@ -179,12 +194,123 @@
         font-size: 18px;
       }
     }
+
+    /* 浮动编辑面板 */
+    .editPanelClass {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border-radius: 12px;
+      width: 99%;
+      max-width: 360px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+    }
+
+    .panelHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+    }
+
+    .panelHeader h4 {
+      margin: 10px;
+      margin-left: 20px;
+    }
+
+    .closeButtonClass {
+      background: #2da5a5cf;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      color: #999;
+      margin: 10px;
+      padding: 8px 16px 8px 15px;
+    }
+
+    .editPanelOptionClass {
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #f5f5f5;
+    }
+
+    .editPanelOptionTextClass {
+      flex: 1;
+      margin-left: 10px;
+    }
+
+    .editPanelOptionActions button,
+    #addNewOption {
+      padding: 4px 8px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .addSection {
+      display: flex;
+    }
+
+    .addSection input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      min-width: 0;
+    }
+
+    @media (max-width: 768px) and (hover: none) {
+
+      .editPanelOptionActions button,
+      .closeButtonClass,
+      #addNewOption {
+        transform: none;
+        box-shadow: none;
+        margin: 10px;
+      }
+
+      .editPanelOptionActions button:active,
+      .closeButtonClass:active,
+      #addNewOption:active {
+        background: #2da5a5ff;
+      }
+
+      #closeEditPanelButton {
+        transform: none;
+        box-shadow: none;
+        margin: 10px;
+      }
+
+    }
+
+    #newOptionInput {
+      margin: 10px;
+      margin-right: 14px;
+      font-size: 16px;
+    }
+
+    .overlayClass {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+    }
   </style>
 </head>
 
 <body>
   <div class="container">
-    <span class="switch-label">点动模式</span>
+    <span class="switchLabelClass">点动模式</span>
     <label class="switch">
       <input type="checkbox" id="controlSwitch">
       <span class="slider"></span>
@@ -193,37 +319,135 @@
     <br>
     <button id="offButton">关闭</button>
     <br>
-    <input id="device" placeholder="设备地址"><br>
-    <button id="setDevice">设置</button><br>
-    <input type="number" id="inputValue" placeholder="开启时间"><br>
-    <button id="setButton">设置</button>
+    <input type="number" id="inputOntime" placeholder="开启时间"><br>
+    <button id="setButton">设置</button><br>
+    <select id="deviceSelection">
+      <!-- 设备列表 -->
+    </select><br>
+    <button onclick="openEditPanel()">编辑设备</button>
     <div id="status"></div>
+  </div>
+
+  <!-- 编辑面板 -->
+  <div class="overlayClass" id="overlay" onclick="closeEditPanel()"></div>
+  <div class="editPanelClass" id="editPanel">
+    <div class="panelHeader">
+      <h4>编辑设备</h4>
+      <button id="closeEditPanelButton" class="closeButtonClass" onclick="closeEditPanel()">&times;</button>
+    </div>
+
+    <div id="optionList">
+      <!-- 选项列表 -->
+    </div>
+
+    <div class="addSection">
+      <input type="search" id="newOptionInput" placeholder="">
+      <button id="addNewOption" onclick="addOptionSimple()">添加</button>
+    </div>
   </div>
 
   <script>
     let isMomentaryMode = false;
     let isButtonPressed = false;
+    let deviceOptions = [];
+    let defaultOption;
 
     let timer;
-    let device;
     let ontime = 0;
     const onButton = document.getElementById('onButton');
     const offButton = document.getElementById('offButton');
     const setButton = document.getElementById('setButton');
     const switchElement = document.getElementById('controlSwitch');
-    const inputBox = document.getElementById('inputValue');
-    const setDeviceAddr = document.getElementById('setDevice');
+    const inputBox = document.getElementById('inputOntime');
 
     onButton.addEventListener('pointerdown', handleOnButton);
     offButton.addEventListener('pointerdown', handleOffButton);
-    setButton.addEventListener('pointerdown', setOntime);
     switchElement.addEventListener('change', toggleControlMode);
-    setDeviceAddr.addEventListener('pointerdown', setDevice);
+    setButton.addEventListener('pointerdown', setOntime);
     inputBox.addEventListener('keypress', function (e) {
       if (e.key === 'Enter' || e.keyCode === 13) {
         setOntime();
       }
     });
+
+    function switchDevice() {
+      const select = document.getElementById('deviceSelection');
+      if (defaultOption != select.selectedIndex && select.selectedIndex != -1) {
+        defaultOption = select.selectedIndex;
+        localStorage.setItem('default_option', defaultOption);
+      }
+    }
+
+    function renderSelect() {
+      // 渲染select
+      const select = document.getElementById('deviceSelection');
+      select.innerHTML = '';
+      deviceOptions.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt;
+        option.textContent = opt;
+        select.appendChild(option);
+      });
+      if (select.options.length > defaultOption) {
+        select.selectedIndex = defaultOption;
+      } else {
+        select.selectedIndex = 0;
+      }
+      if (select.options.length === 0) {
+        select.innerHTML = '<option value="">当前设备列表为空</option>';
+      }
+
+      // 渲染编辑面板
+      const list = document.getElementById('optionList');
+      list.innerHTML = deviceOptions.map((opt, index) => `
+        <div class="editPanelOptionClass">
+          <span class="editPanelOptionTextClass">${opt}</span>
+          <div class="editPanelOptionActions">
+            <button onclick="editOption(${index})">编辑</button>
+            <button onclick="deleteOption(${index})">删除</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openEditPanel() {
+      document.getElementById('editPanel').style.display = 'block';
+      document.getElementById('overlay').style.display = 'block';
+    }
+
+    function closeEditPanel() {
+      document.getElementById('editPanel').style.display = 'none';
+      document.getElementById('overlay').style.display = 'none';
+    }
+
+    function addOptionSimple() {
+      const input = document.getElementById('newOptionInput');
+      const text = input.value.trim();
+
+      if (text && !deviceOptions.includes(text)) {
+        deviceOptions.push(text);
+        renderSelect();
+        input.value = '';
+        localStorage.setItem('device_list', JSON.stringify(deviceOptions));
+      }
+    }
+
+    function editOption(index) {
+      const newText = prompt('编辑选项:', deviceOptions[index]);
+      if (newText && newText.trim() && !deviceOptions.includes(newText)) {
+        deviceOptions[index] = newText;
+        renderSelect();
+        localStorage.setItem('device_list', JSON.stringify(deviceOptions));
+      }
+    }
+
+    function deleteOption(index) {
+      if (confirm('确定删除？')) {
+        deviceOptions.splice(index, 1);
+        renderSelect();
+        localStorage.setItem('device_list', JSON.stringify(deviceOptions));
+      }
+    }
 
     document.querySelectorAll('button').forEach(button => {
       button.addEventListener('touchstart', function (e) {
@@ -243,7 +467,7 @@
 
     function toggleControlMode() {
       isMomentaryMode = switchElement.checked;
-      const inputElement = document.getElementById('inputValue');
+      const inputElement = document.getElementById('inputOntime');
 
       if (isMomentaryMode) {
         // offButton.disabled = true;
@@ -265,11 +489,11 @@
     async function handleOnButton() {
       let ontime_tmp = ontime;
 
-      if (document.getElementById('inputValue').value) {
-        const value = document.getElementById('inputValue').value;
-        document.getElementById('inputValue').value = '';
+      if (document.getElementById('inputOntime').value) {
+        const value = document.getElementById('inputOntime').value;
+        document.getElementById('inputOntime').value = '';
         if (isNaN(value) || value < 1 || value > 300) {
-          document.getElementById('inputValue').placeholder = '请输入有效值 1 - 300';
+          document.getElementById('inputOntime').placeholder = '有效值：1~300';
           return;
         } else {
           ontime_tmp = Number(value);
@@ -322,7 +546,9 @@
     }
 
     function sendRequest(url) {
-      url = 'http://' + device + url;
+      const select = document.getElementById('deviceSelection');
+      if (!select.value) return;
+      url = 'http://' + select.value + url;
       return fetch(url)
         .then(response => response.text())
         .then(data => {
@@ -354,12 +580,12 @@
 
     function setOntime() {
       if (this.disabled) return;
-      if (document.getElementById('inputValue').value) {
-        const value = document.getElementById('inputValue').value;
+      if (document.getElementById('inputOntime').value) {
+        const value = document.getElementById('inputOntime').value;
 
-        document.getElementById('inputValue').value = '';
+        document.getElementById('inputOntime').value = '';
         if (isNaN(value) || value < -1 || value > 300) {
-          document.getElementById('inputValue').placeholder = '请输入有效值 -1 - 300';
+          document.getElementById('inputOntime').placeholder = '有效值：-1~300';
           return;
         }
         if (ontime != value) {
@@ -370,33 +596,21 @@
       showOntime(ontime);
     }
 
-    function setDevice() {
-      if (document.getElementById('device').value) {
-        const value = document.getElementById('device').value;
-
-        if (device != value) {
-          device = value;
-          localStorage.setItem("device", device);
-        }
-        document.getElementById('device').value = '';
-        document.getElementById('device').placeholder = device;
-      }
-    }
-
     function showOntime(ontime) {
       if (ontime > 0) {
-        document.getElementById('inputValue').placeholder = '开启时间' + ontime + 'S';
+        document.getElementById('inputOntime').placeholder = '开启时间' + ontime + 'S';
       } else if (ontime == 0) {
-        document.getElementById('inputValue').placeholder = '已锁定';
+        document.getElementById('inputOntime').placeholder = '已锁定';
       } else if (ontime == -1) {
-        document.getElementById('inputValue').placeholder = '持续开启';
+        document.getElementById('inputOntime').placeholder = '持续开启';
       }
     }
 
     window.onload = function () {
       ontime = Number(localStorage.getItem('ontime') ?? 40);
-      device = localStorage.getItem('device') ?? '192.168.254.54';
-      document.getElementById('device').placeholder = device;
+      deviceOptions = JSON.parse(localStorage.getItem('device_list')) ?? [];
+      defaultOption = Number(localStorage.getItem('default_option') ?? 0);
+      renderSelect();
       showOntime(ontime);
       sendRequest('/hello');
     }
@@ -406,6 +620,10 @@
     });
 
     document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        switchDevice()
+      }
+
       if (document.visibilityState === "visible") {
         sendRequest('/hello');
       }
