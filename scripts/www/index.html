@@ -1,11 +1,646 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>PakePlus</title>
-    </head>
-    <body>
-        PakePlus
-    </body>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Network Relay</title>
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      outline: none;
+    }
+
+    *:focus,
+    *:active {
+      outline: none;
+    }
+
+    body {
+      display: flex;
+      height: 100vh;
+      justify-content: center;
+      align-items: center;
+      background: #f0f0f0;
+      font-family: Arial, sans-serif;
+    }
+
+    .container {
+      text-align: center;
+    }
+
+    button,
+    input,
+    select {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 12px;
+      border: 1px solid #ccc;
+      text-align: center;
+      transition: all 0.1s ease;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      user-select: none;
+    }
+
+    #inputOntime {
+      max-width: 16ch;
+    }
+
+    select {
+      min-width: 21ch;
+      text-align-last: center;
+      text-align: center;
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+    }
+
+    input::placeholder {
+      text-align: center;
+      color: #999;
+    }
+
+    button {
+      background: #2da5a5cf;
+      color: white;
+      cursor: pointer;
+    }
+
+    @media (hover: hover) {
+      button:hover:not(:disabled) {
+        background: #2da5a5ff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      button:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+    }
+
+    button:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+      opacity: 0.6;
+      transform: none;
+      box-shadow: none;
+    }
+
+    input:disabled {
+      background: #f5f5f5;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    #status {
+      margin-top: 20px;
+      font-weight: bold;
+      color: #333;
+      min-height: 24px;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+      margin-bottom: 20px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .1s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .1s;
+      border-radius: 50%;
+    }
+
+    input:checked+.slider {
+      background-color: #2da5a5cf;
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(26px);
+    }
+
+    .switchLabelClass {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    @media (max-width: 768px) and (hover: none) {
+
+      button,
+      input,
+      select {
+
+        @media (min-height: 641px) {
+          padding: 16px 28px;
+          margin: 14px;
+          font-size: 20px;
+        }
+
+        touch-action: none;
+      }
+
+      button:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      button.button-pressed:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      }
+
+      .switch {
+        width: 70px;
+        height: 40px;
+      }
+
+      .slider:before {
+        height: 32px;
+        width: 32px;
+      }
+
+      #status {
+        font-size: 18px;
+      }
+    }
+
+    /* 浮动编辑面板 */
+    .editPanelClass {
+      display: none;
+      position: fixed;
+      top: 40%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: white;
+      border-radius: 12px;
+      width: 99%;
+      max-width: 360px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+    }
+
+    .panelHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #eee;
+    }
+
+    .panelHeader h4 {
+      margin: 10px;
+      margin-left: 20px;
+    }
+
+    .closeButtonClass {
+      background: #2da5a5cf;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      color: #999;
+      margin: 10px;
+      padding: 8px 16px 8px 15px;
+    }
+
+    .editPanelOptionClass {
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #f5f5f5;
+    }
+
+    .editPanelOptionTextClass {
+      flex: 1;
+      margin-left: 10px;
+    }
+
+    .editPanelOptionActions button,
+    #addNewOption {
+      padding: 4px 8px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .addSection {
+      display: flex;
+    }
+
+    .addSection input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      min-width: 0;
+    }
+
+    @media (max-width: 768px) and (hover: none) {
+
+      .editPanelOptionActions button,
+      .closeButtonClass,
+      #addNewOption {
+        transform: none;
+        box-shadow: none;
+        margin: 10px;
+      }
+
+      .editPanelOptionActions button:active,
+      .closeButtonClass:active,
+      #addNewOption:active {
+        background: #2da5a5ff;
+      }
+
+      #closeEditPanelButton {
+        transform: none;
+        box-shadow: none;
+        margin: 10px;
+      }
+
+    }
+
+    #newOptionInput {
+      margin: 10px;
+      margin-right: 14px;
+      font-size: 16px;
+    }
+
+    .overlayClass {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <span class="switchLabelClass">点动模式</span>
+    <label class="switch">
+      <input type="checkbox" id="controlSwitch">
+      <span class="slider"></span>
+    </label><br>
+    <button id="onButton">开启</button>
+    <br>
+    <button id="offButton">关闭</button>
+    <br>
+    <input type="number" id="inputOntime" placeholder="开启时间"><br>
+    <button id="setButton">设置</button><br>
+    <select id="deviceSelection">
+      <!-- 设备列表 -->
+    </select><br>
+    <button onclick="openEditPanel()">编辑设备</button>
+    <div id="status"></div>
+  </div>
+
+  <!-- 编辑面板 -->
+  <div class="overlayClass" id="overlay" onclick="closeEditPanel()"></div>
+  <div class="editPanelClass" id="editPanel" draggable="true" ondragstart="onDragStart(event)"
+    ondragend="onDragEnd(event)">
+    <div class="panelHeader">
+      <h4>编辑设备</h4>
+      <button id="closeEditPanelButton" class="closeButtonClass" onclick="closeEditPanel()">&times;</button>
+    </div>
+
+    <div id="optionList">
+      <!-- 选项列表 -->
+    </div>
+
+    <div class="addSection">
+      <input type="search" id="newOptionInput" placeholder="">
+      <button id="addNewOption" onclick="addOptionSimple()">添加</button>
+    </div>
+  </div>
+
+  <script>
+    let isMomentaryMode = false;
+    let isButtonPressed = false;
+    let deviceOptions = [];
+    let defaultOption;
+
+    let timer;
+    let ontime = 0;
+    const onButton = document.getElementById('onButton');
+    const offButton = document.getElementById('offButton');
+    const setButton = document.getElementById('setButton');
+    const switchElement = document.getElementById('controlSwitch');
+    const inputBox = document.getElementById('inputOntime');
+
+    onButton.addEventListener('pointerdown', handleOnButton);
+    offButton.addEventListener('pointerdown', handleOffButton);
+    switchElement.addEventListener('change', toggleControlMode);
+    setButton.addEventListener('pointerdown', setOntime);
+    inputBox.addEventListener('keypress', function (e) {
+      if (e.key === 'Enter' || e.keyCode === 13) {
+        setOntime();
+      }
+    });
+
+    function switchDevice() {
+      const select = document.getElementById('deviceSelection');
+      if (defaultOption != select.selectedIndex && select.selectedIndex != -1) {
+        defaultOption = select.selectedIndex;
+        localStorage.setItem('default_option', defaultOption);
+      }
+    }
+
+    function renderSelect() {
+      // 渲染select
+      const select = document.getElementById('deviceSelection');
+      select.innerHTML = '';
+      deviceOptions.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt;
+        option.textContent = opt;
+        select.appendChild(option);
+      });
+      if (select.options.length > defaultOption) {
+        select.selectedIndex = defaultOption;
+      } else {
+        select.selectedIndex = 0;
+      }
+      if (select.options.length === 0) {
+        select.innerHTML = '<option value="">当前设备列表为空</option>';
+      }
+
+      // 渲染编辑面板
+      const list = document.getElementById('optionList');
+      list.innerHTML = deviceOptions.map((opt, index) => `
+        <div class="editPanelOptionClass">
+          <span class="editPanelOptionTextClass">${opt}</span>
+          <div class="editPanelOptionActions">
+            <button onclick="editOption(${index})">编辑</button>
+            <button onclick="deleteOption(${index})">删除</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openEditPanel() {
+      document.getElementById('editPanel').style.display = 'block';
+      document.getElementById('overlay').style.display = 'block';
+    }
+
+    function closeEditPanel() {
+      document.getElementById('editPanel').style.display = 'none';
+      document.getElementById('overlay').style.display = 'none';
+    }
+
+    function addOptionSimple() {
+      const input = document.getElementById('newOptionInput');
+      const text = input.value.trim();
+
+      if (text && !deviceOptions.includes(text)) {
+        deviceOptions.push(text);
+        renderSelect();
+        input.value = '';
+        localStorage.setItem('device_list', JSON.stringify(deviceOptions));
+      }
+    }
+
+    function editOption(index) {
+      const newText = prompt('编辑选项:', deviceOptions[index]);
+      if (newText && newText.trim() && !deviceOptions.includes(newText)) {
+        deviceOptions[index] = newText;
+        renderSelect();
+        localStorage.setItem('device_list', JSON.stringify(deviceOptions));
+      }
+    }
+
+    function deleteOption(index) {
+      if (confirm('确定删除？')) {
+        deviceOptions.splice(index, 1);
+        renderSelect();
+        localStorage.setItem('device_list', JSON.stringify(deviceOptions));
+      }
+    }
+
+    document.querySelectorAll('button').forEach(button => {
+      button.addEventListener('touchstart', function (e) {
+        if (!this.disabled) {
+          this.classList.add('button-pressed');
+        }
+      });
+
+      button.addEventListener('touchend', function (e) {
+        this.classList.remove('button-pressed');
+      });
+
+      button.addEventListener('touchcancel', function (e) {
+        this.classList.remove('button-pressed');
+      });
+    });
+
+    function toggleControlMode() {
+      isMomentaryMode = switchElement.checked;
+      const inputElement = document.getElementById('inputOntime');
+
+      if (isMomentaryMode) {
+        // offButton.disabled = true;
+        inputElement.disabled = true;
+        setButton.disabled = true;
+
+      } else {
+        // offButton.disabled = false;
+        inputElement.disabled = false;
+        setButton.disabled = false;
+      }
+    }
+
+    function handleOffButton() {
+      clearInterval(timer);
+      sendRequest('/off');
+    }
+
+    async function handleOnButton() {
+      let ontime_tmp = ontime;
+
+      if (document.getElementById('inputOntime').value) {
+        const value = document.getElementById('inputOntime').value;
+        document.getElementById('inputOntime').value = '';
+        if (isNaN(value) || value < 1 || value > 300) {
+          document.getElementById('inputOntime').placeholder = '有效值：1~300';
+          return;
+        } else {
+          ontime_tmp = Number(value);
+        }
+      }
+
+      showOntime(ontime);
+
+      if (ontime == 0) {
+        document.getElementById('status').innerText = 'LOCKED';
+        return;
+      }
+      if (isMomentaryMode) {
+        ontime_tmp = -1;
+        isButtonPressed = true;
+        document.addEventListener('pointerup', releaseButton, { once: true });
+      }
+      let request_ok = await sendRequest('/on' + '?' + 'ontime=' + ontime_tmp);
+      if (request_ok) {
+        if (ontime_tmp != -1) {
+          let endTime = Date.now() + ontime_tmp * 1000;
+          clearInterval(timer);
+          timer = setInterval(() => {
+            let now = Date.now();
+            let remain = Math.max(0, Math.ceil((endTime - now) / 1000));
+            document.getElementById('status').innerText = remain;
+
+            if (remain <= 0) {
+              clearInterval(timer);
+              document.getElementById('status').innerText = 'OFF';
+            }
+          }, 1000);
+        } else {
+          if (isButtonPressed) {
+            clearInterval(timer);
+            let i = 1;
+            timer = setInterval(() => {
+              document.getElementById('status').innerText = i;
+              i++;
+            }, 1000);
+          }
+        }
+      }
+    }
+
+    function releaseButton() {
+      isButtonPressed = false;
+      clearInterval(timer);
+      sendRequest('/off');
+    }
+
+    function sendRequest(url) {
+      const select = document.getElementById('deviceSelection');
+      if (!select.value) return;
+      url = 'http://' + select.value + url;
+      return fetch(url)
+        .then(response => response.text())
+        .then(data => {
+          console.log('Server response:', data);
+          document.getElementById('status').innerText = data;
+          return true;
+        })
+        .catch(error => {
+          console.error('Error:', error);
+          document.getElementById('status').innerText = '再次请求';
+          return new Promise((resolve) => {
+            setTimeout(() => {
+              fetch(url)
+                .then(r => r.text())
+                .then(data => {
+                  console.log('Server response:', data);
+                  document.getElementById('status').innerText = data;
+                  return true;
+                })
+                .catch(err => {
+                  console.error('Error:', error);
+                  document.getElementById('status').innerText = '请求失败';
+                  return false;
+                });
+            }, 300);
+          });
+        });
+    }
+
+    function setOntime() {
+      if (this.disabled) return;
+      if (document.getElementById('inputOntime').value) {
+        const value = document.getElementById('inputOntime').value;
+
+        document.getElementById('inputOntime').value = '';
+        if (isNaN(value) || value < -1 || value > 300) {
+          document.getElementById('inputOntime').placeholder = '有效值：-1~300';
+          return;
+        }
+        if (ontime != value) {
+          ontime = Number(value);
+          localStorage.setItem("ontime", ontime);
+        }
+      }
+      showOntime(ontime);
+    }
+
+    function showOntime(ontime) {
+      if (ontime > 0) {
+        document.getElementById('inputOntime').placeholder = '开启时间' + ontime + 'S';
+      } else if (ontime == 0) {
+        document.getElementById('inputOntime').placeholder = '已锁定';
+      } else if (ontime == -1) {
+        document.getElementById('inputOntime').placeholder = '持续开启';
+      }
+    }
+
+    window.onload = function () {
+      ontime = Number(localStorage.getItem('ontime') ?? 40);
+      deviceOptions = JSON.parse(localStorage.getItem('device_list')) ?? [];
+      defaultOption = Number(localStorage.getItem('default_option') ?? 0);
+      renderSelect();
+      showOntime(ontime);
+      sendRequest('/hello');
+    }
+
+    document.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") {
+        switchDevice()
+      }
+
+      if (document.visibilityState === "visible") {
+        sendRequest('/hello');
+      }
+    });
+
+    document.querySelectorAll('input, textarea').forEach(element => {
+      element.addEventListener('focus', function () {
+        this.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest'
+        });
+      });
+    });
+
+  </script>
+</body>
+
 </html>
